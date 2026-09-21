@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YT Tools - Keywords, Hashtags, Titles</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:-apple-system,'Segoe UI',Roboto,sans-serif;
+    background:#0f0f14;color:#e8e8f0;
+    min-height:100vh;padding:20px;
+  }
+  .container{max-width:720px;margin:0 auto}
+  h1{
+    font-size:22px;font-weight:700;
+    background:linear-gradient(135deg,#ff4757,#ff6b81);
+    -webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;margin-bottom:6px;
+  }
+  .sub{color:#6b6b80;font-size:13px;margin-bottom:24px}
+
+  .tabs{display:flex;gap:8px;margin-bottom:20px}
+  .tab{
+    flex:1;padding:12px;text-align:center;
+    background:#1a1a24;border:1px solid #2a2a3a;
+    border-radius:12px;cursor:pointer;
+    font-size:14px;font-weight:600;color:#8888a0;
+    transition:all .2s;
+  }
+  .tab.active{background:#ff4757;color:#fff;border-color:#ff4757}
+
+  .panel{display:none}
+  .panel.active{display:block}
+
+  .field{margin-bottom:16px}
+  .field label{
+    display:block;font-size:12px;font-weight:600;
+    color:#8888a0;margin-bottom:6px;letter-spacing:.5px;
+  }
+  .field input,.field textarea{
+    width:100%;padding:14px;
+    background:#1a1a24;border:1px solid #2a2a3a;
+    border-radius:12px;color:#e8e8f0;
+    font-size:14px;font-family:inherit;
+    outline:none;resize:vertical;
+  }
+  .field input:focus,.field textarea:focus{border-color:#ff4757}
+
+  .btn{
+    width:100%;padding:14px;
+    background:linear-gradient(135deg,#ff4757,#ff6b81);
+    border:none;border-radius:12px;
+    color:#fff;font-size:15px;font-weight:700;
+    cursor:pointer;transition:transform .1s;
+  }
+  .btn:active{transform:scale(.97)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+
+  .result{
+    margin-top:16px;padding:16px;
+    background:#1a1a24;border:1px solid #2a2a3a;
+    border-radius:12px;font-size:14px;
+    line-height:1.7;white-space:pre-wrap;
+    min-height:60px;color:#c8c8d8;display:none;
+  }
+  .result.show{display:block}
+  .result.error{
+    background:#2a1515;border-color:#4a2020;
+    color:#ff8888;font-size:12px;
+  }
+
+  .settings{
+    margin-top:30px;padding:16px;
+    background:#1a1a24;border:1px solid #2a2a3a;
+    border-radius:12px;
+  }
+  .settings h3{
+    font-size:13px;color:#8888a0;
+    margin-bottom:12px;letter-spacing:1px;
+  }
+  .settings input{
+    width:100%;padding:10px;
+    background:#0f0f14;border:1px solid #2a2a3a;
+    border-radius:8px;color:#e8e8f0;
+    font-size:12px;margin-bottom:8px;
+    font-family:monospace;outline:none;
+  }
+  .settings input:focus{border-color:#ff4757}
+
+  .toast{
+    position:fixed;bottom:30px;left:50%;
+    transform:translateX(-50%) translateY(60px);
+    background:#ff4757;color:#fff;
+    padding:10px 24px;border-radius:20px;
+    font-size:13px;font-weight:600;
+    opacity:0;transition:all .3s;
+    pointer-events:none;z-index:100;
+  }
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🎬 YT Tools</h1>
+  <div class="sub">Keywords · Hashtags · Titles — Token Harbor API se</div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="keywords">🔍 Keywords</div>
+    <div class="tab" data-tab="hashtags">#️⃣ Hashtags</div>
+    <div class="tab" data-tab="titles">✍️ Titles</div>
+  </div>
+
+  <!-- Keywords -->
+  <div class="panel active" id="panel-keywords">
+    <div class="field">
+      <label>Video Topic / Idea</label>
+      <input id="kw-input" placeholder="jaise: travel vlog 2026">
+    </div>
+    <button class="btn" id="kw-btn">🔍 Keywords Generate Karo</button>
+    <div class="result" id="kw-result"></div>
+  </div>
+
+  <!-- Hashtags -->
+  <div class="panel" id="panel-hashtags">
+    <div class="field">
+      <label>Video Topic</label>
+      <input id="ht-input" placeholder="jaise: fitness tutorial">
+    </div>
+    <button class="btn" id="ht-btn">#️⃣ Hashtags Generate Karo</button>
+    <div class="result" id="ht-result"></div>
+  </div>
+
+  <!-- Titles -->
+  <div class="panel" id="panel-titles">
+    <div class="field">
+      <label>Script ya Idea</label>
+      <textarea id="tt-input" rows="4" placeholder="apna script paste karo ya idea likho..."></textarea>
+    </div>
+    <button class="btn" id="tt-btn">✍️ Titles Generate Karo</button>
+    <div class="result" id="tt-result"></div>
+  </div>
+
+  <!-- Settings -->
+  <div class="settings">
+    <h3>⚙️ API Settings</h3>
+    <input id="api-key" type="password" placeholder="API Key (thk_...)">
+    <input id="api-url" value="https://tokenharbor.ai/v1" placeholder="Base URL">
+    <input id="api-model" value="deepseek-v4-flash:free" placeholder="Model ID">
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ==========================================================
+   YT Tools — Token Harbor API
+   ========================================================== */
+
+const CONFIG = {
+  apiKey: localStorage.getItem('yt_key') || '',
+  baseUrl: localStorage.getItem('yt_url') || 'https://tokenharbor.ai/v1',
+  model: localStorage.getItem('yt_model') || 'deepseek-v4-flash:free'
+};
+
+const apiKeyEl = document.getElementById('api-key');
+const apiUrlEl = document.getElementById('api-url');
+const apiModelEl = document.getElementById('api-model');
+
+apiKeyEl.value = CONFIG.apiKey;
+apiUrlEl.value = CONFIG.baseUrl;
+apiModelEl.value = CONFIG.model;
+
+[apiKeyEl, apiUrlEl, apiModelEl].forEach(el => {
+  el.addEventListener('change', () => {
+    CONFIG.apiKey = apiKeyEl.value.trim();
+    CONFIG.baseUrl = apiUrlEl.value.trim();
+    CONFIG.model = apiModelEl.value.trim();
+    localStorage.setItem('yt_key', CONFIG.apiKey);
+    localStorage.setItem('yt_url', CONFIG.baseUrl);
+    localStorage.setItem('yt_model', CONFIG.model);
+    toast('Settings save ho gayi ✅');
+  });
+});
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+async function callAI(systemPrompt, userPrompt, maxTokens = 1500) {
+  if (!CONFIG.apiKey) throw new Error('Pehle API Key daalo (neeche settings mein)');
+
+  const url = CONFIG.baseUrl.replace(/\/$/, '') + '/chat/completions';
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + CONFIG.apiKey
+    },
+    body: JSON.stringify({
+      model: CONFIG.model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      temperature: 0.8,
+      max_tokens: maxTokens
+    })
+  });
+
+  if (!res.ok) {
+    let errText;
+    try { errText = JSON.stringify(await res.json(), null, 2); }
+    catch { errText = await res.text(); }
+    throw new Error(`HTTP ${res.status}\n${errText}`);
+  }
+
+  const data = await res.json();
+  if (!data.choices || !data.choices[0]) {
+    throw new Error('Response format galat hai:\n' + JSON.stringify(data, null, 2));
+  }
+  return data.choices[0].message.content.trim();
+}
+
+function showResult(elId, text, isError = false) {
+  const el = document.getElementById(elId);
+  el.textContent = text;
+  el.className = 'result show' + (isError ? ' error' : '');
+}
+
+/* ---------- KEYWORDS ---------- */
+document.getElementById('kw-btn').addEventListener('click', async () => {
+  const topic = document.getElementById('kw-input').value.trim();
+  if (!topic) return toast('Pehle topic likho');
+
+  const btn = document.getElementById('kw-btn');
+  btn.disabled = true;
+  btn.textContent = 'Generate ho raha hai...';
+  showResult('kw-result', '⏳ Keywords ban rahe hain...');
+
+  try {
+    const result = await callAI(
+      `Tum YouTube SEO expert ho. User ke video topic se 15-20 keywords banao.
+Categories mein divide karo:
+- Core Keywords (main keywords)
+- Long-tail Keywords (specific phrases)
+- Question Keywords (log jo search karte hain)
+
+Har keyword new line mein likho. Hindi/English dono mix kar sakte ho.`,
+      `Video Topic: ${topic}`,
+      1500
+    );
+    showResult('kw-result', result);
+  } catch (err) {
+    showResult('kw-result', '❌ Error: ' + err.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔍 Keywords Generate Karo';
+  }
+});
+
+/* ---------- HASHTAGS ---------- */
+document.getElementById('ht-btn').addEventListener('click', async () => {
+  const topic = document.getElementById('ht-input').value.trim();
+  if (!topic) return toast('Pehle topic likho');
+
+  const btn = document.getElementById('ht-btn');
+  btn.disabled = true;
+  btn.textContent = 'Generate ho raha hai...';
+  showResult('ht-result', '⏳ Hashtags ban rahe hain...');
+
+  try {
+    const result = await callAI(
+      `Tum YouTube hashtag expert ho. User ke topic se 25-30 hashtags banao.
+
+Rules:
+- # symbol ke saath likho
+- Mix karo: high-reach (general) + niche (specific)
+- Trending aur long-tail hashtags include karo
+- Har hashtag new line mein
+- Hindi/English dono mix kar sakte ho`,
+      `Video Topic: ${topic}`,
+      1500
+    );
+    showResult('ht-result', result);
+  } catch (err) {
+    showResult('ht-result', '❌ Error: ' + err.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '#️⃣ Hashtags Generate Karo';
+  }
+});
+
+/* ---------- TITLES ---------- */
+document.getElementById('tt-btn').addEventListener('click', async () => {
+  const script = document.getElementById('tt-input').value.trim();
+  if (!script) return toast('Pehle script ya idea likho');
+
+  const btn = document.getElementById('tt-btn');
+  btn.disabled = true;
+  btn.textContent = 'Generate ho raha hai...';
+  showResult('tt-result', '⏳ Titles ban rahe hain...');
+
+  try {
+    const result = await callAI(
+      `Tum YouTube title expert ho. User ke script/idea se 10 high-CTR titles banao.
+
+Rules:
+- Har title 60 characters se kam
+- Numbers, questions, ya curiosity use karo
+- Emoji optional
+- 3 categories mein banao:
+  1. Clickbait/Curiosity (5 titles)
+  2. SEO-friendly (3 titles)
+  3. Emotional/Story (2 titles)
+- Har title new line mein, category heading ke saath`,
+      `Script/Idea: ${script}`,
+      1800
+    );
+    showResult('tt-result', result);
+  } catch (err) {
+    showResult('tt-result', '❌ Error: ' + err.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✍️ Titles Generate Karo';
+  }
+});
+
+console.log('%c🎬 YT Tools ready', 'color:#ff4757;font-weight:bold');
+</script>
+
+</body>
+  </html>
